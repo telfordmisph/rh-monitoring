@@ -6,7 +6,6 @@ use App\Http\Controllers\RestroomMonitoringInstanceController;
 use App\Http\Controllers\DemoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\General\AdminController;
-use App\Http\Middleware\AuthMiddleware;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UtilityTrashController;
 use App\Http\Controllers\LocationController;
@@ -39,18 +38,9 @@ Route::post("/add-admin", [AdminController::class, 'addAdmin'])->name('addAdmin'
 Route::post("/remove-admin", [AdminController::class, 'removeAdmin'])->name('removeAdmin');
 Route::patch("/change-admin-role", [AdminController::class, 'changeAdminRole'])->name('changeAdminRole');
 
-
-Route::middleware(AuthMiddleware::class . ':dashboard')->group(function () {
-    Route::get("/", [DashboardController::class, 'index'])->name('dashboard');
-});
-
-Route::middleware(AuthMiddleware::class . ':asset-health')->group(function () {
-    Route::get("/asset-health", [AssetHealthBoardController::class, 'index'])->name('asset-health');
-});
-
-Route::middleware(AuthMiddleware::class . ':utility-trash')->group(function () {
-    Route::get("/utility-trash-list", [UtilityTrashController::class, 'index'])->name('utility-trash');
-});
+Route::get("/", [DashboardController::class, 'index'])->name('dashboard');
+Route::get("/asset-health", [AssetHealthBoardController::class, 'index'])->name('asset-health');
+Route::get("/utility-trash-list", [UtilityTrashController::class, 'index'])->name('utility-trash');
 
 Route::prefix('hazardous')->name('hazardous-log-sheet.')->group(
     function () {

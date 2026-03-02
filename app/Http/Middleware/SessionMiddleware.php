@@ -24,7 +24,8 @@ class SessionMiddleware
     $existing = session('emp_data');
     if ($existing && $existing['token'] === $token) {
       if ($tokenFromQuery) {
-        return redirect($request->url());
+        $url = $request->url();
+        return redirect($url)->withCookie(cookie('sso_token', $token, 60 * 24 * 7));
       }
       return $next($request);
     }
@@ -36,8 +37,11 @@ class SessionMiddleware
 
     if (!$currentUser) {
       session()->forget('emp_data');
+      setcookie('sso_token', '', time() - 3600, '/');
       return $this->redirectToLogin($request);
     }
+
+    Log::info("currentuser" . json_encode($currentUser));
 
     session(['emp_data' => [
       'token'         => $currentUser->token,
@@ -51,11 +55,23 @@ class SessionMiddleware
       'generated_at'  => $currentUser->generated_at,
     ]]);
 
-    if ($tokenFromQuery && (!$existing || $existing['token'] !== $token)) {
-      return redirect($request->url());
+    session()->save();
+
+    $cookie = cookie('sso_token', $currentUser->token, 60 * 24 * 7, '/', null, false, true);
+    $request->setUserResolver(fn() => (object) session('emp_data'));
+
+    $request->attributes->set('auth_user', $currentUser);
+    if ($tokenFromQuery) {
+      $url = $request->url();
+      $query = $request->query();
+      unset($query['key']);
+      if (!empty($query)) {
+        $url .= '?' . http_build_query($query);
+      }
+      return redirect($url)->withCookie($cookie);
     }
 
-    return $next($request);
+    return $next($request)->withCookie($cookie);
   }
 
   private function redirectToLogin(Request $request)
