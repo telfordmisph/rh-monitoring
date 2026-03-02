@@ -58,6 +58,14 @@ class UtilityTrashController extends Controller
 
     return Inertia::render('UtilityTrash/UtilityTrashList', [
       'utilityTrash' => $utilityTrash,
+      'timeRange' => [
+        ['startHour' => 9,    'endHour' => 9.5],
+        ['startHour' => 12.5, 'endHour' => 13],
+        ['startHour' => 17,   'endHour' => 17.5],
+        ['startHour' => 21,   'endHour' => 21.5],
+        ['startHour' => 0.5,  'endHour' => 1],
+        ['startHour' => 5,    'endHour' => 5.5],
+      ],
       'isNotVerified' => $isNotVerified,
       'isVerified' => $isVerified,
       'search' => $search,

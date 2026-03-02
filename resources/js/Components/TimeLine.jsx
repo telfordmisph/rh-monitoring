@@ -14,9 +14,12 @@ export default function TimeLine({ ranges, height = 60 }) {
 	const currentHour =
 		now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
 
-	const inRange = ranges.some(
-		(r) => currentHour >= r.startHour && currentHour < r.endHour,
-	);
+	// const inRange = ranges.some(
+	// 	(r) => currentHour >= r.startHour && currentHour < r.endHour,
+	// );
+
+	const inRange = (hour, start, end) =>
+		start <= end ? hour >= start && hour < end : hour >= start || hour < end; // crosses midnight
 
 	return (
 		<div className="flex flex-col items-center">
@@ -41,13 +44,23 @@ export default function TimeLine({ ranges, height = 60 }) {
 				{/* style={{ backgroundColor: "red", padding: "0 20" }} */}
 				{/* Base line */}
 				<line
-					x1={internalWidth}
+					x1={0}
+					x2={internalWidth}
 					y1={height / 2}
 					y2={height / 2}
 					stroke="var(--color-base-content-dim)"
 					// stroke="#444"
 					strokeWidth={4}
 				/>
+
+				{/* <line
+					x1={internalWidth}
+					y1={height / 2}
+					y2={height / 2}
+					stroke="var(--color-base-content-dim)"
+					// stroke="#444"
+					strokeWidth={4}
+				/> */}
 				{/* Colored ranges */}
 				{ranges.map((r, i) => (
 					<line
@@ -81,27 +94,10 @@ export default function TimeLine({ ranges, height = 60 }) {
 						</text>
 					);
 				})}
-				{/* Current time pointer */}
-				{/* <circle
-                    cx={hourToX(currentHour)}
-                    cy={height / 2}
-                    r={6}
-                    fill={
-                        inRange
-                            ? "var(--color-accent)"
-                            : "var(--color-base-content)"
-                    }
-                    stroke="var(--color-base-content-dim)"
-                    strokeWidth={2}
-                    style={{
-                        filter: inRange
-                            ? "drop-shadow(0 0 4px var(--color-accent))"
-                            : "none",
-                        transition: "cx 1s linear",
-                    }}
-                /> */}
-				{/* Current time pointer with pin */}
-				<g transform={`translate(${hourToX(currentHour)}, ${height / 2})`}>
+				<g
+					transform={`translate(${hourToX(currentHour)}, ${height / 2})`}
+					style={{ transition: "transform 1s linear" }}
+				>
 					{/* Circle */}
 					<circle
 						cx={0}
@@ -114,7 +110,6 @@ export default function TimeLine({ ranges, height = 60 }) {
 							filter: inRange
 								? "drop-shadow(0 0 4px var(--color-accent))"
 								: "none",
-							transition: "transform 1s linear",
 						}}
 					/>
 					{/* Pin triangle */}

@@ -13,9 +13,12 @@ class PerformSDSMonitoringController extends Controller
     public function index(Request $request)
     {
         $chemicals = Chemicals::all();
+        $latestSDSMonitoringInstance =
+            ChemicalSDSMonitoringInstance::with(['creator:EMPLOYID,FIRSTNAME,LASTNAME'])->latest()->first();
 
         return Inertia::render('PerformChemicalSDSPage', [
-            'chemicals' => $chemicals
+            'chemicals' => $chemicals,
+            'latestSDSMonitoringInstance' => $latestSDSMonitoringInstance
         ]);
     }
 

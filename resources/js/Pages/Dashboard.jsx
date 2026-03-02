@@ -1,3 +1,4 @@
+import RunningHoursGauge from "@/Components/Chart/RunningHoursGauge";
 import PieChartWithNeedle from "@/Components/Chart/Speedometer";
 import STATUS_CONFIG from "@/Constants/checkItemStatusConfig";
 import formatFriendlyDate from "@/Utils/formatFriendlyDate";
@@ -94,60 +95,12 @@ function parseRunningHours(raw) {
 	return n;
 }
 
-// ─── Status badge sub-component ───────────────────────────────────────────────
-function ScheduleBadge({ isNoSchedule, isDue }) {
-	if (isNoSchedule) {
-		return (
-			<span className="inline-flex items-center text-xs bg-base-200 text-base-content/50">
-				<span className="text-[10px]">—</span> no schedule
-			</span>
-		);
-	}
-
-	if (isDue) {
-		return (
-			<span className="inline-flex items-center text-xs text-red-600 animate-pulse">
-				<span>⚠</span>
-			</span>
-		);
-	}
-
-	return null;
-}
-
-function PowerStatusBadge({ status }) {
-	const normalized = status?.toLowerCase();
-	const isRunning = normalized === "running";
-	const isUnknown = normalized === "unknown";
-	const isStandby = normalized === "stand by" || normalized === "standby";
-
-	return (
-		<div className="flex items-center gap-1">
-			<div className="relative flex items-center justify-center">
-				{isRunning && (
-					<span className="absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75 animate-ping" />
-				)}
-				<span
-					className={clsx("relative inline-flex h-2 w-2 rounded-full", {
-						"bg-green-400": isRunning,
-						"bg-gray-500": isUnknown,
-						"bg-yellow-400": isStandby,
-					})}
-				/>
-			</div>
-		</div>
-	);
-}
-
-// ─── Single speedometer card ──────────────────────────────────────────────────
 function SpeedometerCard({ entry, speedometerData, maxValue, power }) {
-	console.log("🚀 ~ SpeedometerCard ~ power:", power);
 	const { is_no_schedule, is_due } = entry;
 	const powerStatus = power?.item_status || "unknown";
 	const powerStatusLastUpdated = power?.checked_at || null;
 	const hours = parseRunningHours(entry.item_status);
 	const isInvalid = hours === null;
-	const needleValue = isInvalid ? 0 : Math.min(hours, maxValue);
 	const tooltipId = `tooltip-${entry.asset_name.replace(/\s+/g, "-")}`;
 
 	const checkedBy = entry.checked_by ?? {};
@@ -158,58 +111,33 @@ function SpeedometerCard({ entry, speedometerData, maxValue, power }) {
 		? new Date(entry.checked_at).toLocaleString()
 		: "—";
 
-	const getColorBasedOnStatus = () => {
-		let cumulative = 0;
-		for (const range of speedometerData) {
-			cumulative += range.value;
-			if (hours <= cumulative) return range.fill;
-		}
-		return speedometerData[speedometerData.length - 1].fill;
-	};
+	// Derive okUpTo and warningUpTo from speedometerData cumulative values
+	const okUpTo = speedometerData[0]?.value ?? maxValue * 0.6;
+	const warningUpTo = okUpTo + (speedometerData[1]?.value ?? maxValue * 0.2);
 
 	return (
 		<div
 			className={clsx(
-				"flex relative flex-col items-center w-22 p-1 transition-all",
+				"relative transition-all",
 				is_no_schedule && "opacity-60",
 			)}
+			data-tooltip-id={tooltipId}
 		>
-			<div className="absolute top-2 flex justify-between w-full gap-1">
-				<PowerStatusBadge status={powerStatus} />
-				<ScheduleBadge isNoSchedule={is_no_schedule} isDue={is_due} />
-			</div>
-
-			<PieChartWithNeedle
-				outerRadius={30}
-				innerRadius={25}
-				width={100}
-				cx={50}
-				data={speedometerData}
-				needleValue={needleValue}
-				height={40}
-				cy={30}
+			<RunningHoursGauge
+				current={isInvalid ? 0 : hours}
+				okUpTo={okUpTo}
+				warningUpTo={warningUpTo}
+				max={maxValue}
+				label={entry.asset_name}
+				powerStatus={powerStatus}
+				isDue={is_due}
+				isNoSchedule={is_no_schedule}
 			/>
 
-			{/* Asset name + running hours — hoverable */}
-			<div
-				data-tooltip-id={tooltipId}
-				className="w-full text-center cursor-default"
-			>
-				<div
-					className={clsx(
-						`flex justify-center text-lg truncate leading-5 font-bold ${isInvalid ? "text-base-content italic" : "text-gray-800"}`,
-					)}
-					style={{ color: getColorBasedOnStatus() }}
-				>
-					{isInvalid ? "invalid" : `${hours.toLocaleString()}`}
-					<p className="opacity-75 text-xs">hrs</p>
-				</div>
-				<p className="text-xs font-semibold text-base-content break-all w-full">
-					{entry.asset_name}
-				</p>
-			</div>
+			{isInvalid && (
+				<p className="text-xs italic opacity-50 mt-1">Invalid running hours</p>
+			)}
 
-			{/* Tooltip */}
 			<Tooltip id={tooltipId} place="top" className="z-50 max-w-sm">
 				<div className="text-xs space-y-1">
 					{!!is_due && (
@@ -224,27 +152,22 @@ function SpeedometerCard({ entry, speedometerData, maxValue, power }) {
 					)}
 					<p className="text-sm font-semibold text-white truncate w-full">
 						<span>{entry.asset_name}</span>
-						<span className="text-xs opacity-50 text-white">
-							@{entry.asset_location}
-						</span>
+						<span className="text-xs opacity-50">@{entry.asset_location}</span>
 					</p>
-
 					<div className="flex gap-1">
-						<PowerStatusBadge status={powerStatus} />
 						{powerStatus}
 						<span className="opacity-50">
 							last checked{" "}
 							{formatFriendlyDate(powerStatusLastUpdated, true) || "—"}
 						</span>
 					</div>
-
 					<p className="font-semibold">
 						encoded by: {checkerName} ({checkerTitle})
 					</p>
 					<p className="text-white">max running hours: {maxValue}</p>
 					<p className="text-white">
 						Checked{" "}
-						<span className="font-bold opacity-100">
+						<span className="font-bold">
 							{formatPastDateTimeLabel(checkedAt, true)}
 						</span>{" "}
 						({checkedAt})
@@ -255,14 +178,13 @@ function SpeedometerCard({ entry, speedometerData, maxValue, power }) {
 	);
 }
 
-// ─── Group section (Vacuum / Air Compressor) ──────────────────────────────────
 function SpeedometerGroup({ title, entries, speedometerData, maxValue }) {
 	return (
-		<section className="">
-			<h2 className="text-base-content text-center border-b border-b-base-content/20">
+		<section>
+			<h2 className="text-base-content text-center border-b border-b-base-content/20 mb-2">
 				{title}
 			</h2>
-			<div className="flex gap-2 justify-center">
+			<div className="flex flex-col gap-2">
 				{Object.entries(entries).map(([assetName, items]) => {
 					const runningHours = items.find(
 						(item) => item.item_name.toLowerCase() === "running hours",
@@ -558,13 +480,13 @@ export default function Dashboard() {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-2 w-full gap-2">
-					<div className=" border p-2 border-base-content/10">
+				<div className="grid grid-cols-3 w-full gap-2">
+					<div className="col-span-2 border p-2 border-base-content/10">
 						<div className="flex justify-between items-end">
 							<h1 className="font-semibold">Asset Status</h1>
 							<div className="opacity-50 text-xs">Unique assets per status</div>
 						</div>
-						<div className="grid grid-cols-2 gap-1">
+						<div className="grid grid-cols-3 gap-1">
 							{all_latest_status_results?.map((status, i) => (
 								<StatRow
 									key={i}
@@ -575,7 +497,7 @@ export default function Dashboard() {
 						</div>
 					</div>
 
-					<div className="border border-base-content/10 p-2">
+					<div className="col-span-1 border border-base-content/10 p-2">
 						<h1 className="font-semibold text-center">Running Hours</h1>
 						<SpeedometerGroup
 							title="Vacuum"

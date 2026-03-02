@@ -1,5 +1,6 @@
 import MultiSelectSearchableDropdown from "@/Components/MultiSelectSearchableDropdown";
 import RestroomMonitoringForm from "@/Components/RestroomMonitoringForm";
+import formatFriendlyDate from "@/Utils/formatFriendlyDate";
 import { router, usePage } from "@inertiajs/react";
 import React from "react";
 import { FaCaretDown } from "react-icons/fa6";
@@ -7,7 +8,8 @@ import { FaCaretDown } from "react-icons/fa6";
 const restroomModalID = "restroom-monitoring-checklist-modal";
 
 const PerformRestroomMonitoringPage = () => {
-	const { selectedRestroom, restrooms } = usePage().props;
+	const { selectedRestroom, restrooms, latestRestroomMonitoringInstance } =
+		usePage().props;
 	console.log("🚀 ~ PerformRestroomMonitoringPage ~ restrooms:", restrooms);
 	console.log(
 		"🚀 ~ PerformRestroomMonitoringPage ~ selectedRestroom:",
@@ -30,7 +32,17 @@ const PerformRestroomMonitoringPage = () => {
 
 	return (
 		<div className="flex w-full h-[calc(100vh-100px)] flex-col gap-4 relative p-1 shadow-lg">
-			<h1 className="font-bold">Perform Restroom Monitoring</h1>
+			<div>
+				<h1 className="font-bold">Perform Restroom Monitoring</h1>
+				<div>
+					last monitored by{" "}
+					{latestRestroomMonitoringInstance?.creator?.FIRSTNAME} at{" "}
+					{formatFriendlyDate(
+						latestRestroomMonitoringInstance?.created_at,
+						true,
+					)}
+				</div>
+			</div>
 			<MultiSelectSearchableDropdown
 				modalId={restroomModalID}
 				options={

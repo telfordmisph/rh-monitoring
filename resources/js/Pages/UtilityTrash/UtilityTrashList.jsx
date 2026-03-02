@@ -26,6 +26,7 @@ const UtilityTrashList = () => {
 
 	const {
 		utilityTrash: serverUtilityTrash,
+		timeRange,
 		isNotVerified: serverIsNotVerified,
 		isVerified: serverIsVerified,
 		startDate: serverStartDate,
@@ -274,38 +275,11 @@ const UtilityTrashList = () => {
 
 				<div className="w-full flex justify-center bg-base-300 px-2 border border-base-content-dim">
 					<TimeLine
-						ranges={[
-							{
-								startHour: 9,
-								endHour: 9.5,
-								color: "var(--color-primary)",
-							},
-							{
-								startHour: 12.5,
-								endHour: 13,
-								color: "var(--color-primary)",
-							},
-							{
-								startHour: 17,
-								endHour: 17.5,
-								color: "var(--color-primary)",
-							},
-							{
-								startHour: 21,
-								endHour: 21.5,
-								color: "var(--color-primary)",
-							},
-							{
-								startHour: 0.5,
-								endHour: 1,
-								color: "var(--color-primary)",
-							},
-							{
-								startHour: 5,
-								endHour: 5.5,
-								color: "var(--color-primary)",
-							},
-						]}
+						ranges={timeRange.map((range) => ({
+							startHour: range.startHour,
+							endHour: range.endHour,
+							color: "var(--color-primary)",
+						}))}
 					/>
 				</div>
 
@@ -344,27 +318,6 @@ const UtilityTrashList = () => {
 									</span>
 								</td>
 								<td>{entry?.verified_by?.EMPNAME || "-"}</td>
-								{/* <Link
-                                        href={route("partname.edit", {
-                                            id: part.ppc_partnamedb_id,
-                                            search: searchInput,
-                                            perPage: maxItem,
-                                            page: currentPage,
-                                        })}
-                                        className="btn btn-ghost btn-sm btn-primary"
-                                    >
-                                        <FaEdit />
-                                    </Link>
-                                    <a
-                                        href="#"
-                                        className="btn btn-ghost btn-sm text-error"
-                                        onClick={() => {
-                                            setSelectedPart(part);
-                                            deleteModalRef.current.open();
-                                        }}
-                                    >
-                                        <FaTrash />
-                                    </a> */}
 								<td className="flex flex-col lg:flex-row">
 									{entry?.verified_by === null ? (
 										<a

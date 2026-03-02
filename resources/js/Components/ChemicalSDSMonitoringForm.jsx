@@ -62,7 +62,7 @@ export default function ChemicalSDSForm({
 			className="flex h-[90%] w-full flex-col gap-2"
 		>
 			<div className="overflow-y-scroll w-full h-200 gap-10">
-				<div className="grid z-10 py-2 bg-base-100 grid-cols-3 sticky top-0 font-semibold">
+				<div className="grid z-10 py-2 bg-base-200 grid-cols-3 sticky top-0 font-semibold">
 					<div>Chemical</div>
 					<div>Status</div>
 					<div>Remarks</div>
@@ -72,7 +72,7 @@ export default function ChemicalSDSForm({
 					<div
 						key={field.id}
 						className={clsx("grid grid-cols-3 gap-2 items-center", {
-							"bg-base-100": index % 2 === 0,
+							"bg-base-300": index % 2 === 0,
 						})}
 					>
 						<div

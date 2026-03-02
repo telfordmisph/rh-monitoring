@@ -15,6 +15,8 @@ class PerformRestroomMonitoringController extends Controller
     public function index(Request $request)
     {
         $restrooms = Restroom::all();
+        $latestRestroomMonitoringInstance =
+            RestroomMonitoringInstance::with(['creator:EMPLOYID,FIRSTNAME,LASTNAME'])->latest()->first();
 
         $selectedRestroomId = $request->input('restroom_id', $restrooms->first()?->id);
         Log::info("selectedRestroomId: " . $selectedRestroomId);
@@ -22,7 +24,8 @@ class PerformRestroomMonitoringController extends Controller
 
         return Inertia::render('PerformRestroomMonitoringPage', [
             'restrooms' => $restrooms,
-            'selectedRestroom' => $selectedRestroom ?? null
+            'selectedRestroom' => $selectedRestroom ?? null,
+            'latestRestroomMonitoringInstance' => $latestRestroomMonitoringInstance
         ]);
     }
 

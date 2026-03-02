@@ -1,9 +1,5 @@
 import MultiSelectSearchableDropdown from "@/Components/MultiSelectSearchableDropdown";
-import RestroomMonitoringForm from "@/Components/RestroomMonitoringForm";
-import ReadOnlyColumns from "@/Components/tanStackTable/ReadOnlyColumn";
-import TanstackTable from "@/Components/tanStackTable/TanstackTable";
 import STATUS_CONFIG from "@/Constants/checkItemStatusConfig";
-import { useEditableTable } from "@/Hooks/useEditableTable";
 import formatFriendlyDate from "@/Utils/formatFriendlyDate";
 import { router, usePage } from "@inertiajs/react";
 import React, { useEffect, useState } from "react";
