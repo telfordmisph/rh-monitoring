@@ -1,12 +1,15 @@
+import Calendar from "@/Components/Calendar/Calendar";
 import RunningHoursGauge from "@/Components/Chart/RunningHoursGauge";
 import PieChartWithNeedle from "@/Components/Chart/Speedometer";
 import STATUS_CONFIG from "@/Constants/checkItemStatusConfig";
 import formatFriendlyDate from "@/Utils/formatFriendlyDate";
 import formatPastDateTimeLabel from "@/Utils/formatPastDateTimeLabel";
 import { Head, usePage } from "@inertiajs/react";
+import { AlertTitle } from "@mui/material";
 import clsx from "clsx";
-import { useState } from "react";
+import React, { useState } from "react";
 import { FaCheckCircle, FaMinusCircle, FaTimes } from "react-icons/fa";
+import { GrAlert } from "react-icons/gr";
 import { TbAlertTriangle } from "react-icons/tb";
 import { Tooltip } from "react-tooltip";
 
@@ -85,6 +88,7 @@ const statusColors = {
 	ok: "var(--color-ok)",
 	warning: "var(--color-warning)",
 	danger: "var(--color-danger)",
+	unknown: "var(--color-grey-500)",
 };
 
 // ─── Validity helpers ─────────────────────────────────────────────────────────
@@ -95,44 +99,65 @@ function parseRunningHours(raw) {
 	return n;
 }
 
-function SpeedometerCard({ entry, speedometerData, maxValue, power }) {
-	const { is_no_schedule, is_due } = entry;
-	const powerStatus = power?.item_status || "unknown";
-	const powerStatusLastUpdated = power?.checked_at || null;
-	const hours = parseRunningHours(entry.item_status);
-	const isInvalid = hours === null;
-	const tooltipId = `tooltip-${entry.asset_name.replace(/\s+/g, "-")}`;
+function SpeedometerCard({
+	assetName,
+	runningHoursItem,
+	powerItem,
+	speedometerData = [],
+	maxValue,
+}) {
+	console.log(
+		"🚀 xxxxxxxxxxxxxxxxxxxxxx~ SpeedometerCard ~ runningHoursItem:",
+		runningHoursItem,
+	);
+	const latest = runningHoursItem?.latest;
+	const lastPmDate = runningHoursItem?.latest?.last_pm_date ?? null;
+	const first = runningHoursItem?.first;
 
-	const checkedBy = entry.checked_by ?? {};
-	const checkerName =
-		[checkedBy.FIRSTNAME, checkedBy.LASTNAME].filter(Boolean).join(" ") || "—";
-	const checkerTitle = checkedBy.JOB_TITLE || "—";
-	const checkedAt = entry.checked_at
-		? new Date(entry.checked_at).toLocaleString()
-		: "—";
+	const powerStatus = powerItem?.latest?.item_status || "unknown";
+	const powerStatusLastUpdated = powerItem?.latest?.checked_at || null;
 
-	// Derive okUpTo and warningUpTo from speedometerData cumulative values
+	const hours = parseRunningHours(runningHoursItem?.running_hours);
+	console.log("🚀 ~ SpeedometerCard ~ hours:", hours);
+	const isInvalid = runningHoursItem?.running_hours_invalid;
+	console.log("🚀 ~ SpeedometerCard ~ isInvalid:", isInvalid);
+	const isNoSchedule = !!latest?.is_no_schedule;
+	const isDue = !!latest?.is_due;
+
+	const tooltipId = `tooltip-${assetName.replace(/\s+/g, "-")}`;
+
 	const okUpTo = speedometerData[0]?.value ?? maxValue * 0.6;
 	const warningUpTo = okUpTo + (speedometerData[1]?.value ?? maxValue * 0.2);
 
+	const formatChecker = (checkedBy) => {
+		if (!checkedBy) return "—";
+		const name =
+			[checkedBy.FIRSTNAME, checkedBy.LASTNAME].filter(Boolean).join(" ") ||
+			"—";
+		return `${name} (${checkedBy.JOB_TITLE || "—"})`;
+	};
+
 	return (
 		<div
-			className={clsx(
-				"relative transition-all",
-				is_no_schedule && "opacity-60",
-			)}
+			className={clsx("relative transition-all", isNoSchedule && "opacity-60")}
 			data-tooltip-id={tooltipId}
 		>
 			<RunningHoursGauge
-				current={isInvalid ? 0 : hours}
+				current={isInvalid ? 0 : hours || 0}
 				okUpTo={okUpTo}
 				warningUpTo={warningUpTo}
 				max={maxValue}
-				label={entry.asset_name}
+				label={assetName}
 				powerStatus={powerStatus}
-				isDue={is_due}
-				isNoSchedule={is_no_schedule}
+				isDue={isDue}
+				isNoSchedule={isNoSchedule}
 			/>
+
+			{lastPmDate === null && (
+				<div className="flex gap-1 text-xs text-error italic mt-1">
+					<GrAlert />↑ No PM on record
+				</div>
+			)}
 
 			{isInvalid && (
 				<p className="text-xs italic opacity-50 mt-1">Invalid running hours</p>
@@ -140,20 +165,30 @@ function SpeedometerCard({ entry, speedometerData, maxValue, power }) {
 
 			<Tooltip id={tooltipId} place="top" className="z-50 max-w-sm">
 				<div className="text-xs space-y-1">
-					{!!is_due && (
+					{!!isDue && (
 						<p className="text-red-400 font-semibold">
 							⚠ Running hours are overdue for update
 						</p>
 					)}
-					{!!is_no_schedule && (
+					{!!isNoSchedule && (
 						<p className="text-white italic">
 							No maintenance schedule configured
 						</p>
 					)}
+					{lastPmDate === null && (
+						<div className="flex gap-1 text-xs text-error italic mt-1">
+							<GrAlert /> No PM on record
+						</div>
+					)}
+
 					<p className="text-sm font-semibold text-white truncate w-full">
-						<span>{entry.asset_name}</span>
-						<span className="text-xs opacity-50">@{entry.asset_location}</span>
+						<span>{assetName}</span>
+						<span className="text-xs opacity-50">
+							{" "}
+							@ {latest?.asset_location}
+						</span>
 					</p>
+
 					<div className="flex gap-1">
 						{powerStatus}
 						<span className="opacity-50">
@@ -161,45 +196,74 @@ function SpeedometerCard({ entry, speedometerData, maxValue, power }) {
 							{formatFriendlyDate(powerStatusLastUpdated, true) || "—"}
 						</span>
 					</div>
-					<p className="font-semibold">
-						encoded by: {checkerName} ({checkerTitle})
-					</p>
+
 					<p className="text-white">max running hours: {maxValue}</p>
-					<p className="text-white">
-						Checked{" "}
-						<span className="font-bold">
-							{formatPastDateTimeLabel(checkedAt, true)}
-						</span>{" "}
-						({checkedAt})
-					</p>
+
+					<div className="border-t border-white/20 pt-1 mt-1 space-y-1">
+						<p className="font-semibold text-white">
+							First check after last PM
+						</p>
+						<p>
+							Hours:{" "}
+							<span className="font-bold">{first?.item_status ?? "—"}</span>
+						</p>
+						<p>
+							Checked:{" "}
+							{first?.checked_at
+								? new Date(first.checked_at).toLocaleString()
+								: "—"}
+						</p>
+						<p>By: {formatChecker(runningHoursItem?.first_checked_by)}</p>
+					</div>
+
+					<div className="border-t border-white/20 pt-1 mt-1 space-y-1">
+						<p className="font-semibold text-white">Latest check</p>
+						<p>
+							Hours:{" "}
+							<span className="font-bold">{latest?.item_status ?? "—"}</span>
+						</p>
+						<p>
+							Checked:{" "}
+							{latest?.checked_at
+								? new Date(latest.checked_at).toLocaleString()
+								: "—"}
+						</p>
+						<p>By: {formatChecker(runningHoursItem?.latest_checked_by)}</p>
+					</div>
 				</div>
 			</Tooltip>
 		</div>
 	);
 }
 
-function SpeedometerGroup({ title, entries, speedometerData, maxValue }) {
+function SpeedometerGroup({
+	title,
+	entries,
+	runningHoursName,
+	speedometerData,
+	maxValue,
+}) {
+	console.log("🚀 ~ SpeedometerGroup ~ runningHoursName:", runningHoursName);
 	return (
 		<section>
 			<h2 className="text-base-content text-center border-b border-b-base-content/20 mb-2">
-				{title}
+				{title}{" "}
+				{entries?.length === 0 && (
+					<span className="opacity-50">(no entries)</span>
+				)}
 			</h2>
 			<div className="flex flex-col gap-2">
 				{Object.entries(entries).map(([assetName, items]) => {
-					const runningHours = items.find(
-						(item) => item.item_name.toLowerCase() === "running hours",
-					);
-					const power = items.find(
-						(item) => item.item_name.toLowerCase() === "vacuum pump",
-					);
+					console.log("🚀 ~ SpeedometerGroup ~ items:", items);
 
 					return (
 						<SpeedometerCard
 							key={assetName}
-							entry={runningHours}
+							assetName={assetName}
+							runningHoursItem={items[runningHoursName] ?? null}
+							powerItem={items["Vacuum Pump"] ?? null}
 							speedometerData={speedometerData}
 							maxValue={maxValue}
-							power={power}
 						/>
 					);
 				})}
@@ -237,9 +301,9 @@ function AssetRow({ asset, color, barColor }) {
 			<div className="flex flex-col items-center gap-1 shrink-0">
 				{total > 0 && (
 					<div className="flex items-center gap-1.5">
-						<div className="w-16 h-1.5 rounded-full bg-black/10 overflow-hidden">
+						<div className="w-16 h-1.5 bg-black/10 overflow-hidden">
 							<div
-								className={clsx("h-full rounded-full transition-all", barColor)}
+								className={clsx("h-full transition-all", barColor)}
 								style={{ width: `${pct}%` }}
 							/>
 						</div>
@@ -258,117 +322,184 @@ function AssetRow({ asset, color, barColor }) {
 	);
 }
 
-// ─── Single category card ─────────────────────────────────────────────────────
-function CategoryCard({ category, assets = [] }) {
-	const [expanded, setExpanded] = useState(false);
-	const count = assets.length;
+const STATUS_KEYS = [
+	{ key: "assets_complete", label: "Complete", color: "bg-green-500/10" },
+	{ key: "assets_partial", label: "Partial", color: "bg-blue-500/10" },
+	{
+		key: "assets_not_started",
+		label: "Not Started",
+		color: "bg-yellow-500/10",
+	},
+	{ key: "assets_idle", label: "Idle", color: "bg-base-content/30/10" },
+	{ key: "assets_overdue", label: "Overdue", color: "bg-red-500/10" },
+];
 
+function StatusCell({ value, color }) {
 	return (
-		<div
+		<td
 			className={clsx(
-				"border overflow-hidden transition-all duration-200",
-				category.border,
-				expanded ? "shadow-md" : "shadow-sm hover:shadow-md",
+				"text-center font-mono font-semibold",
+				value === 0 ? "text-base-content/20" : color,
 			)}
 		>
-			{/* Header */}
-			<button
-				onClick={() => count > 0 && setExpanded((p) => !p)}
-				className={clsx(
-					"w-full flex items-center gap-4 p-4 transition-colors text-left",
-					category.bg,
-					count > 0 ? "cursor-pointer" : "cursor-default",
-				)}
-			>
-				{/* Left indicator bar */}
-				<div
-					className={clsx(
-						"w-1 self-stretch rounded-full shrink-0",
-						category.indicator,
-					)}
-				/>
+			{value}
+		</td>
+	);
+}
 
-				{/* Icon */}
-				<div className={clsx("shrink-0", category.color)}>{category.icon}</div>
+function ScheduleCategoryTable({ data = [] }) {
+	const [expandedCategory, setExpandedCategory] = useState(null);
+	const [expandedChecklist, setExpandedChecklist] = useState(null);
 
-				{/* Text */}
-				<div className="flex-1 min-w-0">
-					<p className={clsx("text-sm font-semibold", category.color)}>
-						{category.label}
-					</p>
-					<p className="text-xs text-base-content/50">{category.description}</p>
-				</div>
+	const toggleCategory = (category) =>
+		setExpandedCategory((prev) => (prev === category ? null : category));
 
-				{/* Count */}
-				<div className="flex items-center gap-2 shrink-0">
-					<span
-						className={clsx(
-							"text-2xl font-bold tabular-nums leading-none",
-							count === 0 ? "text-base-content/30" : category.color,
-						)}
-					>
-						{count}
-					</span>
-					{count > 0 && (
-						<svg
-							viewBox="0 0 20 20"
-							fill="currentColor"
-							className={clsx(
-								"w-4 h-4 transition-transform duration-200 text-base-content/30",
-								expanded && "rotate-180",
-							)}
-						>
-							<path
-								fillRule="evenodd"
-								d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-								clipRule="evenodd"
-							/>
-						</svg>
-					)}
-				</div>
-			</button>
+	const toggleChecklist = (checklistId) =>
+		setExpandedChecklist((prev) => (prev === checklistId ? null : checklistId));
 
-			{/* Expanded asset list */}
-			{expanded && count > 0 && (
-				<div className="border-t border-black/5 px-2 py-1 max-h-60 overflow-y-auto">
-					{assets.map((asset) => (
-						<AssetRow
-							key={asset.id}
-							asset={asset}
-							color={category.color}
-							barColor={category.barColor}
-						/>
+	return (
+		<div className="overflow-x-auto">
+			<table className="table table-sm w-full">
+				<thead>
+					<tr className="bg-base-200 text-xs text-base-content/60 uppercase">
+						<th className="w-40">Schedule</th>
+						<th className="text-center">Total</th>
+						<th className="text-center bg-green-500/10">Complete</th>
+						<th className="text-center bg-blue-500/10">Partial</th>
+						<th className="text-center bg-yellow-500/10">Not Started</th>
+						<th className="text-center bg-base-content/10">Idle</th>
+						<th className="text-center bg-red-500/10">Overdue</th>
+					</tr>
+				</thead>
+				<tbody>
+					{data.map((row) => (
+						<React.Fragment key={row.schedule_category}>
+							{/* Schedule category row */}
+							<tr
+								className={clsx(
+									"cursor-pointer hover:bg-base-200 transition-colors",
+									expandedCategory === row.schedule_category && "bg-base-200",
+								)}
+								onClick={() => toggleCategory(row.schedule_category)}
+							>
+								<td className="font-semibold capitalize flex items-center gap-2">
+									<ChevronIcon
+										rotated={expandedCategory === row.schedule_category}
+									/>
+									{row.schedule_category ?? "Unscheduled"}
+								</td>
+								<td className="text-center font-bold">{row.total_assets}</td>
+								{STATUS_KEYS.map(({ key, color }) => (
+									<StatusCell
+										key={key}
+										value={row.checklists.reduce(
+											(sum, c) => sum + c[key].length,
+											0,
+										)}
+										color={color}
+									/>
+								))}
+							</tr>
+
+							{/* Checklist rows (nested under category) */}
+							{expandedCategory === row.schedule_category &&
+								row.checklists.map((checklist) => (
+									<React.Fragment key={checklist.checklist_id}>
+										{/* Checklist row */}
+										<tr
+											className={clsx(
+												"cursor-pointer hover:bg-base-300/50 transition-colors bg-base-200/50",
+												expandedChecklist === checklist.checklist_id &&
+													"bg-base-300/50",
+											)}
+											onClick={() => toggleChecklist(checklist.checklist_id)}
+										>
+											<td className="pl-8 text-sm flex items-center gap-2 text-base-content/70">
+												<ChevronIcon
+													rotated={expandedChecklist === checklist.checklist_id}
+												/>
+												{checklist.checklist_name}
+											</td>
+											<td className="text-center">{checklist.total_assets}</td>
+											{STATUS_KEYS.map(({ key, color }) => (
+												<StatusCell
+													key={key}
+													value={checklist[key].length}
+													color={color}
+												/>
+											))}
+										</tr>
+
+										{/* Asset badges (nested under checklist) */}
+										{expandedChecklist === checklist.checklist_id && (
+											<tr>
+												<td colSpan={7} className="bg-base-300/30 px-12 py-2">
+													{STATUS_KEYS.map(({ key, label, color }) =>
+														checklist[key].length > 0 ? (
+															<div key={key} className="mb-2 last:mb-0">
+																<p
+																	className={clsx(
+																		"text-xs badge font-semibold mb-1",
+																		color,
+																	)}
+																>
+																	{label}
+																</p>
+																<div className="flex flex-wrap gap-1">
+																	{checklist[key].map((asset) => (
+																		<span
+																			key={asset.id}
+																			className="badge badge-sm badge-ghost"
+																		>
+																			{asset.code}
+																		</span>
+																	))}
+																</div>
+															</div>
+														) : null,
+													)}
+												</td>
+											</tr>
+										)}
+									</React.Fragment>
+								))}
+						</React.Fragment>
 					))}
-				</div>
-			)}
+				</tbody>
+			</table>
 		</div>
 	);
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-function AssetDueCategories({ assets_due = mockData }) {
+function ChevronIcon({ rotated }) {
 	return (
-		<section className="space-y-2">
-			<div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-				{ASSETS_CATEGORIES.map((category) => (
-					<CategoryCard
-						key={category.key}
-						category={category}
-						assets={assets_due[category.key] ?? []}
-					/>
-				))}
-			</div>
-		</section>
+		<svg
+			viewBox="0 0 20 20"
+			fill="currentColor"
+			className={clsx(
+				"w-3 h-3 shrink-0 transition-transform text-base-content/30",
+				rotated && "rotate-90",
+			)}
+		>
+			<path
+				fillRule="evenodd"
+				d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+				clipRule="evenodd"
+			/>
+		</svg>
 	);
 }
-
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export default function Dashboard() {
 	const {
 		vacuum_latest_results,
 		air_compressor_latest_result,
+		genset_latest_result,
 		vacuum_running_hours_ok,
 		assets_due,
+		genset_running_hours_name,
+		vaccum_running_hours_name,
+		air_compressor_running_hours_name,
 		unverified_today,
 		checklists_overview,
 		unverified_total,
@@ -379,6 +510,18 @@ export default function Dashboard() {
 		air_compressor_running_hours_danger,
 		all_latest_status_results,
 	} = usePage().props;
+	console.log(
+		"🚀 ~ Dashboard ~ air_compressor_running_hours_name:",
+		air_compressor_running_hours_name,
+	);
+	console.log(
+		"🚀 ~ Dashboard ~ vaccum_running_hours_name:",
+		vaccum_running_hours_name,
+	);
+	console.log(
+		"🚀 ~ Dashboard ~ genset_running_hours_name:",
+		genset_running_hours_name,
+	);
 	console.log(
 		"🚀 ~ Dashboard ~ all_latest_status_results:",
 		all_latest_status_results,
@@ -393,6 +536,7 @@ export default function Dashboard() {
 		"🚀 ~ Dashboard ~ air_compressor_latest_running_hours:",
 		air_compressor_latest_result,
 	);
+	console.log("🚀 ~ Dashboard ~ genset_latest_result:", genset_latest_result);
 
 	const vacuumMax =
 		vacuum_running_hours_ok +
@@ -435,6 +579,24 @@ export default function Dashboard() {
 		},
 	];
 
+	const gensetSpeedometer = [
+		{
+			name: "ok",
+			value: 0,
+			fill: statusColors.unknown,
+		},
+		{
+			name: "warning",
+			value: 0,
+			fill: statusColors.unknown,
+		},
+		{
+			name: "danger",
+			value: 0,
+			fill: statusColors.unknown,
+		},
+	];
+
 	const total = ASSETS_CATEGORIES.reduce(
 		(sum, cat) => sum + (assets_due[cat.key]?.length ?? 0),
 		0,
@@ -444,72 +606,75 @@ export default function Dashboard() {
 		<>
 			<Head title="Dashboard" />
 
-			<div className="space-y-4">
-				<h1 className="text-2xl font-bold text-base-content">Dashboard</h1>
-
-				<div className="flex gap-4">
+			<h1 className="text-2xl font-bold text-base-content">Dashboard</h1>
+			<div className="grid grid-cols-6 space-x-2">
+				<div className="col-span-4 flex gap-2">
 					<div className="flex-1">
-						<div className="flex items-center gap-2">
-							<div className="flex flex-col">
-								<h2 className="text-base font-semibold text-base-content">
-									Checklist Status
-								</h2>
-								<span className="text-xs text-base-content/40">
-									{total} assets total
-								</span>
-							</div>
-							<div className="flex justify-center">
-								<div className="font-bold flex gap-1 items-center text-primary">
-									<div className="text-[30px]">{unverified_total}</div>
-									<div className="">unverified checklist</div>
+						<div className="border border-base-content/10">
+							<div className="flex items-center p-2 gap-2">
+								<div className="flex flex-col">
+									<h2 className="text-base font-semibold text-base-content">
+										Checklist Status
+									</h2>
+									<span className="text-xs text-base-content/40">
+										{total} assets total
+									</span>
 								</div>
-							</div>
-							{/* <div className="flex justify-center">
-								<div className="font-bold flex gap-1 items-center text-primary">
-									<div className="text-[30px]">
-										{all_latest_no_good_results?.length ?? 0}
+								<div className="flex justify-center">
+									<div className="font-bold flex gap-1 items-center text-primary">
+										<div className="text-[30px]">{unverified_total}</div>
+										<div className="">unverified checklist</div>
 									</div>
-									<div className="">"No Good" results</div>
 								</div>
-							</div> */}
-							{/* <div className="font-bold text-primary text-center">
-								{unverified_today}, today
-							</div> */}
+							</div>
+
+							<ScheduleCategoryTable data={assets_due} />
 						</div>
-						<AssetDueCategories assets_due={assets_due} />
+
+						<div className="border mt-2 p-2 border-base-content/10">
+							<div className="flex justify-between items-end">
+								<h1 className="font-semibold">Asset Status</h1>
+								<div className="opacity-50 text-xs">
+									Unique assets per status
+								</div>
+							</div>
+							<div className="grid grid-cols-3 gap-1">
+								{all_latest_status_results?.map((status, i) => (
+									<StatRow
+										key={i}
+										statusKey={(status?.item_status ?? "").toLowerCase()}
+										count={status?.asset_count ?? 0}
+									/>
+								))}
+							</div>
+						</div>
 					</div>
 				</div>
 
-				<div className="grid grid-cols-3 w-full gap-2">
-					<div className="col-span-2 border p-2 border-base-content/10">
-						<div className="flex justify-between items-end">
-							<h1 className="font-semibold">Asset Status</h1>
-							<div className="opacity-50 text-xs">Unique assets per status</div>
-						</div>
-						<div className="grid grid-cols-3 gap-1">
-							{all_latest_status_results?.map((status, i) => (
-								<StatRow
-									key={i}
-									statusKey={(status?.item_status ?? "").toLowerCase()}
-									count={status?.asset_count ?? 0}
-								/>
-							))}
-						</div>
-					</div>
-
+				<div className="col-span-2 w-full gap-2">
 					<div className="col-span-1 border border-base-content/10 p-2">
 						<h1 className="font-semibold text-center">Running Hours</h1>
 						<SpeedometerGroup
 							title="Vacuum"
 							entries={vacuum_latest_results}
 							speedometerData={vacuumSpeedometer}
+							runningHoursName={vaccum_running_hours_name}
 							maxValue={vacuumMax}
 						/>
 						<SpeedometerGroup
 							title="Air Compressor"
 							entries={air_compressor_latest_result}
 							speedometerData={airCompressorSpeedometer}
+							runningHoursName={air_compressor_running_hours_name}
 							maxValue={airCompressorMax}
+							genset_latest_result
+						/>
+						<SpeedometerGroup
+							title="Genset Compressor"
+							entries={genset_latest_result}
+							speedometerData={gensetSpeedometer}
+							runningHoursName={genset_running_hours_name}
+							maxValue={0}
 						/>
 					</div>
 				</div>

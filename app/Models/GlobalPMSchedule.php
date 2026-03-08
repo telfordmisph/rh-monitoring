@@ -14,6 +14,14 @@ class GlobalPMSchedule extends Model
   protected $fillable = [
     'schedule_id',
     'global_pm_id',
+    'next_due_date',
+    'modified_by',
+    'modified_at',
+  ];
+
+  protected $casts = [
+    'next_due_date' => 'date',
+    'modified_at'   => 'datetime',
   ];
 
   public function schedule()

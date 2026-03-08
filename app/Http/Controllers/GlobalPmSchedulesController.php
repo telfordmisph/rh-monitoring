@@ -8,24 +8,92 @@ use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use App\Models\GlobalPMSchedule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Services\BulkUpserter;
+use App\Traits\MassDeletesByIds;
 
 class GlobalPmSchedulesController extends Controller
 {
+  use MassDeletesByIds;
+
   public function index(Request $request)
   {
-    $globalPMSchedules = GlobalPMSchedule::query()
-      ->with('schedule', 'globalPm')
-      ->get();
+    $search = $request->input('search', '');
+    $perPage = $request->input('perPage', 30);
+    $totalEntries = GlobalPMSchedule::count();
+
+    $globalPmSchedules = GlobalPMSchedule::query()
+      ->with(['globalPm', 'schedule'])
+      ->when($search, function ($query, $search) {
+        $query->whereHas('globalPm', fn($q) => $q->where('maintenance_name', 'like', "%{$search}%"));
+      })
+      ->paginate($perPage)
+      ->withQueryString();
 
     if ($request->wantsJson()) {
       return response()->json([
-        'globalPMSchedules' => $globalPMSchedules,
+        'globalPmSchedules' => $globalPmSchedules,
+        'search' => $search,
+        'perPage' => $perPage,
+        'totalEntries' => $totalEntries,
       ]);
     }
 
     return Inertia::render('GlobalPmScheduleList', [
-      'globalPMSchedules' => $globalPMSchedules,
+      'globalPmSchedules' => $globalPmSchedules,
+      'search' => $search,
+      'perPage' => $perPage,
+      'totalEntries' => $totalEntries,
     ]);
+  }
+
+  public function bulkUpdate(Request $request)
+  {
+    $rows = $request->all();
+    $user = session('emp_data');
+
+    $columnRules = [
+      'global_pm_id' => fn($id, $fields) => [
+        'required',
+        'int',
+        Rule::unique('entity_global_pm_schedules', 'global_pm_id')
+          ->ignore(is_numeric($id) ? $id : null),
+      ],
+      'schedule_id' => fn($id) => [
+        'required',
+        'int',
+        Rule::exists('schedules', 'id'),
+      ],
+    ];
+
+    $rows = array_map(function ($row) use ($user) {
+      $row['modified_by'] = $user['emp_id'] ?? null;
+      return $row;
+    }, $rows);
+
+    $bulkUpdater = new BulkUpserter(new GlobalPMSchedule(), $columnRules, [], []);
+
+    $result = $bulkUpdater->update($rows ?? null);
+
+    if (!empty($result['errors'])) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'You have ' . count($result['errors']) . ' error/s',
+        'data' => $result['errors']
+      ], 422);
+    }
+
+    return response()->json([
+      'status' => 'ok',
+      'message' => 'Updated successfully',
+    ]);
+  }
+
+  public function massGenocide(Request $request)
+  {
+    return $this->massDeleteByIds(
+      $request,
+      GlobalPMSchedule::class
+    );
   }
 
   private function validateEntry(Request $request, $id = null)

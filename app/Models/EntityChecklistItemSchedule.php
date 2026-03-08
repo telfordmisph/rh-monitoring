@@ -14,6 +14,7 @@ class EntityChecklistItemSchedule extends Model
   protected $fillable = [
     'schedule_id',
     'checklist_item_id',
+    'modified_by',
   ];
 
   public function schedule()

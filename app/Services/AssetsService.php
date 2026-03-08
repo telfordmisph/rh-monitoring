@@ -3,11 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Log;
 use App\Models\Asset;
-use Illuminate\Validation\Rule;
 use App\Models\ChecklistItemResult;
 use App\Constants\DueScheduleQuery;
 

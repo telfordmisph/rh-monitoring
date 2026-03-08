@@ -17,11 +17,13 @@ use App\Http\Controllers\ChecklistItemSchedulesController;
 use App\Http\Controllers\SchedulesController;
 use App\Http\Controllers\CheckItemsResultController;
 use App\Http\Controllers\ChecklistInstanceController;
+use App\Http\Controllers\PmHistoryController;
 use App\Http\Controllers\GlobalPmSchedulesController;
 use App\Http\Controllers\GlobalPmController;
 use App\Http\Controllers\ChecklistsController;
 use App\Http\Controllers\RestroomMonitoringInstanceController;
 use App\Http\Controllers\HazardousWasteTurnOverLogSheetController;
+use App\Http\Middleware\ApiPermissionMiddleware;
 
 Route::middleware([ApiAuthMiddleware::class])
   ->name('api.')
@@ -121,6 +123,9 @@ Route::middleware([ApiAuthMiddleware::class])
         ->name('bulkUpdate');
       Route::delete('/bulk-delete', [AssetsController::class, 'massGenocide'])
         ->name('massGenocide');
+      Route::prefix('assets/{assetId}')->group(function () {
+        Route::post('record-done-date', [PmHistoryController::class, 'recordAssetPmDoneDate'])->name('recordDoneDate');
+      });
     });
 
     Route::prefix('checklist-item-result')->name('checklist-item-result.')->group(function () {
@@ -159,11 +164,13 @@ Route::middleware([ApiAuthMiddleware::class])
 
     Route::prefix('checklist-instance')->name('checklist-instance.')->group(function () {
       Route::patch('/verify', [ChecklistInstanceController::class, 'verify'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('verify');
     });
 
     Route::prefix('restroom-monitoring-instance')->name('restroom-monitoring-instance.')->group(function () {
       Route::patch('/verify', [RestroomMonitoringInstanceController::class, 'verify'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('verify');
     });
 
@@ -204,26 +211,29 @@ Route::middleware([ApiAuthMiddleware::class])
         ->name('update');
     });
 
-    Route::prefix('global_pm_schedules')->name('global_pm_schedules.')->group(function () {
-      Route::get('/', [GlobalPmSchedulesController::class, 'index'])
-        ->name('index');
-      Route::post('/add', [GlobalPmSchedulesController::class, 'store'])
-        ->name('add');
-      Route::delete('/{id}/delete', [GlobalPmSchedulesController::class, 'destroy'])
-        ->name('delete');
-      Route::patch('/{id}/update', [GlobalPmSchedulesController::class, 'update'])
-        ->name('update');
-    });
-
-    Route::prefix('global_pm')->name('global_pm.')->group(function () {
+    Route::prefix('global-pm')->name('global-pm.')->group(function () {
+      Route::patch('/bulk-update', [GlobalPmController::class, 'bulkUpdate'])
+        ->name('bulkUpdate');
       Route::get('/', [GlobalPmController::class, 'index'])
         ->name('index');
-      Route::post('/add', [GlobalPmController::class, 'store'])
-        ->name('add');
-      Route::delete('/{id}/delete', [GlobalPmController::class, 'destroy'])
-        ->name('delete');
-      Route::patch('/{id}/update', [GlobalPmController::class, 'update'])
-        ->name('update');
+
+      Route::prefix('schedules')->name('schedules.')->group(function () {
+        Route::get('/', [GlobalPmSchedulesController::class, 'index'])
+          ->name('index');
+        Route::post('/add', [GlobalPmSchedulesController::class, 'store'])
+          ->name('add');
+        Route::delete('/{id}/delete', [GlobalPmSchedulesController::class, 'destroy'])
+          ->name('delete');
+        Route::patch('/{id}/update', [GlobalPmSchedulesController::class, 'update'])
+          ->name('update');
+        Route::patch('/bulk-update', [GlobalPmSchedulesController::class, 'bulkUpdate'])
+          ->name('bulkUpdate');
+        Route::delete('/bulk-delete', [GlobalPmSchedulesController::class, 'massGenocide'])
+          ->name('massGenocide');
+        Route::prefix('globalPmId/{globalPmId}')->group(function () {
+          Route::post('record-done-date', [PmHistoryController::class, 'recordGlobalPmDoneDate'])->name('recordDoneDate');
+        });
+      });
     });
 
     Route::prefix('checklists')->name('checklists.')->group(function () {

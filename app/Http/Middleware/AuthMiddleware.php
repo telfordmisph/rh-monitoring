@@ -16,38 +16,23 @@ class AuthMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, $permission = null)
+    public function handle(Request $request, Closure $next)
     {
-        return $next($request);
+        Log::info('AuthMiddleware triggered', [
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'route_name' => optional($request->route())->getName(),
+            'route_action' => optional($request->route())->getActionName(),
+            'all_params' => $request->all(),
+        ]);
 
-        $token = $request->query('key') ?? $request->bearerToken() ?? session('emp_data.token');
-        if (!$token) {
-            $redirectUrl = urlencode($request->fullUrl());
-            return redirect("http://192.168.1.27:8080/authify/public/login?redirect={$redirectUrl}");
+        $user = $request->attributes->get('auth_user');
+
+        if (!$user) {
+            abort(403);
         }
 
-        $cacheKey = 'authify_user_' . $token;
-
-        $currentUser = cache()->remember($cacheKey, now()->addMinutes(10), function () use ($token) {
-            return DB::connection('authify')
-                ->table('authify.authify_sessions')
-                ->where('token', $token)
-                ->first();
-        });
-
-        $role = strtolower(trim($currentUser->emp_jobtitle));
-
-        $rolesConfig = config('roles');
-
-        if (!array_key_exists($role, $rolesConfig)) {
-            return Inertia::render('Forbidden');
-        }
-
-        if ($permission && !in_array($permission, $rolesConfig[$role])) {
-            return Inertia::render('Forbidden');
-        }
-
-        $request->attributes->set('emp_id', $currentUser->emp_id);
+        $request->attributes->set('emp_id', $user->emp_id);
         return $next($request);
     }
 }

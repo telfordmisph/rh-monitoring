@@ -5,110 +5,81 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
-use Carbon\Carbon;
 use App\Models\GlobalPm;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Services\BulkUpserter;
 
 class GlobalPmController extends Controller
 {
   public function index(Request $request)
   {
-    $globalPMs = GlobalPm::query()
-      ->get();
+    $search = $request->input('search', '');
+    $perPage = $request->input('perPage', 100);
+    $totalEntries = GlobalPm::count();
+
+    $globalPms = GlobalPm::query()
+      ->when($search, function ($query, $search) {
+        $query->Where('maintenance_name', 'like', "%{$search}%");
+      })
+      ->orderBy('maintenance_name')
+      ->paginate($perPage)
+      ->withQueryString();
 
     if ($request->wantsJson()) {
       return response()->json([
-        'globalPMs' => $globalPMs,
+        'globalPms' => $globalPms,
+        'search' => $search,
+        'perPage' => $perPage,
+        'totalEntries' => $totalEntries,
       ]);
     }
 
     return Inertia::render('GlobalPmList', [
-      'globalPMs' => $globalPMs,
+      'globalPms' => $globalPms,
+      'search' => $search,
+      'perPage' => $perPage,
+      'totalEntries' => $totalEntries,
     ]);
   }
 
-  private function validateEntry(Request $request, $id = null)
+  public function bulkUpdate(Request $request)
   {
-    return $request->validate(
-      [
-        'maintenance_name' => [
-          'required',
-          'string',
-          'max:255',
-          Rule::unique((new GlobalPm())->getTable())->where(function ($query) use ($request) {
-            return $query->where('maintenance_name', $request->maintenance_name);
-          })->ignore($id),
-        ],
-        'maintenance_description' => 'nullable|string',
+    $rows = $request->all();
+    $user = session('emp_data');
+
+    $columnRules = [
+      'maintenance_name' => fn($id) => [
+        'required',
+        'string',
+        Rule::unique('global_pm', 'maintenance_name')
+          ->ignore(is_numeric($id) ? $id : null),
       ],
-      [
-        'maintenance_name.unique' =>
-        'The maintenance name provided already exists.',
+      'maintenance_description' => fn() => [
+        'nullable',
+        'string',
+      ],
+      'properties' => 'nullable|array',
+    ];
 
-      ]
-    );
-  }
+    $rows = array_map(function ($row) use ($user) {
+      $row['modified_by'] = $user['emp_id'] ?? null;
+      return $row;
+    }, $rows);
 
-  public function store(Request $request)
-  {
-    $validated = $this->validateEntry($request);
-    $user_id = session('emp_data')['emp_id'] ?? null;
+    $bulkUpdater = new BulkUpserter(new GlobalPm(), $columnRules, [], []);
 
-    $entry = GlobalPm::create([
-      ...$validated,
-      'modified_by' => $user_id,
-      'modified_at' => Carbon::now(),
-    ]);
+    $result = $bulkUpdater->update($rows ?? null);
 
-    return response()->json([
-      'message' => 'Preventative Maintenance created successfully',
-      'data'    => $entry,
-    ], 201);
-  }
-
-  public function upsert($id = null)
-  {
-    $item = $id ? GlobalPm::findOrFail($id) : null;
-
-    return Inertia::render('GlobalPmUpsert', [
-      'toBeEdit' => $item,
-    ]);
-  }
-
-  public function update(Request $request, $id)
-  {
-    $item = GlobalPm::findOrFail($id);
-
-    $validated = $this->validateEntry($request, $id);
-    $user_id = session('emp_data')['emp_id'] ?? null;
-
-    $item->update([
-      ...$validated,
-      'modified_by' => $user_id,
-      'modified_at' => Carbon::now(),
-    ]);
-
-    return response()->json([
-      'message' => 'Preventative Maintenance updated successfully',
-      'data'    => $item,
-    ]);
-  }
-
-  public function destroy($id)
-  {
-    try {
-      $item = GlobalPm::findOrFail($id);
-      $item->delete();
-
-      return response()->json([
-        'success' => true,
-        'message' => 'Preventative Maintenance deleted successfully',
-      ]);
-    } catch (ModelNotFoundException $e) {
+    if (!empty($result['errors'])) {
       return response()->json([
         'status' => 'error',
-        'message' => 'Preventative Maintenance not found. Please verify the ID.',
-      ], 404);
+        'message' => 'You have ' . count($result['errors']) . ' error/s',
+        'data' => $result['errors']
+      ], 422);
     }
+
+    return response()->json([
+      'status' => 'ok',
+      'message' => 'Updated successfully',
+    ]);
   }
 }

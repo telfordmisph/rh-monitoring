@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Models\Checklist;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class CheckItem extends Model
 {
@@ -13,8 +13,12 @@ class CheckItem extends Model
   protected $fillable = [
     'name',
     'description',
-
-    // item_id
-    // -> criteria
   ];
+
+  protected static function booted()
+  {
+    static::creating(function ($item) {
+      $item->slug ??= Str::slug($item->name, '_');
+    });
+  }
 }

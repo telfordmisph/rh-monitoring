@@ -1,7 +1,7 @@
 import Dropdown from "@/Components/sidebar/Dropdown";
 import SidebarLink from "@/Components/sidebar/SidebarLink";
 import { usePage } from "@inertiajs/react";
-import { BiTask } from "react-icons/bi";
+import { BiCalendar, BiTask } from "react-icons/bi";
 import {
 	FaCheckCircle,
 	FaFileAlt,
@@ -58,6 +58,13 @@ export default function NavLinks({ isCollapse }) {
 				href={route("asset-health")}
 				label="Asset Health Board"
 				icon={<LuLayoutDashboard className="w-full h-full" />}
+				isIconOnly={isCollapse}
+			/>
+
+			<SidebarLink
+				href={route("pm.schedule.getAllSchedule")}
+				label="Asset PM Calendar"
+				icon={<BiCalendar className="w-full h-full" />}
 				isIconOnly={isCollapse}
 			/>
 
@@ -129,6 +136,16 @@ export default function NavLinks({ isCollapse }) {
 					{
 						href: route("asset-pm-schedule.index"),
 						label: "Assets PM Schedule",
+						icon: <FaTools className="w-full h-full" />,
+					},
+					{
+						href: route("global-pm.index"),
+						label: "Global PM",
+						icon: <FaTools className="w-full h-full" />,
+					},
+					{
+						href: route("global-pm.schedules.index"),
+						label: "Global PM Schedules",
 						icon: <FaTools className="w-full h-full" />,
 					},
 				]}

@@ -11,7 +11,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Database\QueryException;
 use App\Traits\MassDeletesByIds;
 use App\Constants\DueScheduleQuery;
 use App\Services\BulkUpserter;
@@ -26,7 +25,10 @@ class ChecklistItemsController extends Controller
     $allChecklists = Checklist::all();
     $selectedChecklistId = $request->input('checklist_id', $allChecklists->first()?->id);
     Log::info("selectedChecklistId: " . $selectedChecklistId);
-    $selectedChecklist = Checklist::with('checklistItems.item')->find($selectedChecklistId);
+    $selectedChecklist = Checklist::with([
+      'checklistItems.item',
+      'checklistItems.schedule',
+    ])->find($selectedChecklistId);
 
     if ($request->wantsJson()) {
       return response()->json([
@@ -173,7 +175,7 @@ class ChecklistItemsController extends Controller
         'int',
         Rule::unique('checklist_items', 'item_id')
           ->where('checklist_id', $fields['checklist_id'] ?? null)
-          ->ignore($id),
+          ->ignore(is_numeric($id) ? $id : null),
       ],
       // might TODO: checkbox can also be used. So how can you enforced 2 values? another column for checkbox_value?
       'input_type'     => ['required', 'string', Rule::in(['text', 'number', 'select'])],
@@ -196,9 +198,31 @@ class ChecklistItemsController extends Controller
       return $row;
     }, $rows);
 
-    $bulkUpdater = new BulkUpserter(new ChecklistItem(), $columnRules, [], []);
+    $result = DB::transaction(function () use ($user, $rows, $columnRules) {
+      $bulkUpdater = new BulkUpserter(new ChecklistItem(), $columnRules, [], []);
+      $result = $bulkUpdater->update($rows ?? null);
 
-    $result = $bulkUpdater->update($rows ?? null);
+      $checklistItems = array_merge(
+        $result['updated'] ?? [],
+        $result['inserted'] ?? [],
+      );
+
+      $rowsById = collect($rows)->keyBy('id');
+      foreach ($checklistItems as $checklistItem) {
+        $scheduleId = $rowsById[$checklistItem->id]['schedule_id'] ?? null;
+        if (!$scheduleId) continue;
+
+        $checklistItem->entitySchedule()->updateOrCreate(
+          [],
+          [
+            'schedule_id' => $scheduleId,
+            'modified_by' => $user['emp_id'] ?? null,
+          ]
+        );
+      }
+
+      return $result;
+    });
 
     if (!empty($result['errors'])) {
       return response()->json([
@@ -211,7 +235,6 @@ class ChecklistItemsController extends Controller
     return response()->json([
       'status' => 'ok',
       'message' => 'Updated successfully',
-      'updated' => $result['updated']
     ]);
   }
 

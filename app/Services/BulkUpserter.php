@@ -54,10 +54,10 @@ class BulkUpserter
   {
     $errors = [];
     $errorMessages = [];
-    $insertedIds = [];
-    $updatedIds = [];
+    $inserted = [];
+    $updated = [];
 
-    DB::transaction(function () use ($rows, &$errors, &$updatedIds, &$insertedIds) {
+    DB::transaction(function () use ($rows, &$errors, &$updated, &$inserted) {
       foreach ($rows as $row) {
         $id = $row['id'] ?? null;
         $fields = $row;
@@ -106,12 +106,12 @@ class BulkUpserter
 
         if ($isNew) {
           $modelInstance = $this->model->create($normalizedData);
-          $insertedIds[] = $modelInstance->getKey();
+          $inserted[] = $modelInstance;
         } else {
           $modelInstance = $this->model->find($id);
           if (!$modelInstance) continue;
           $modelInstance->update($normalizedData);
-          $updatedIds[] = $id;
+          $updated[] = $modelInstance;
         }
       }
     });
@@ -135,8 +135,8 @@ class BulkUpserter
     }
 
     return [
-      'updated' => $updatedIds,
-      'inserted' => $insertedIds,
+      'updated' => $updated,
+      'inserted' => $inserted,
       'errors' => $errors,
       'errorMessages' => $errorMessages
     ];

@@ -39,4 +39,19 @@ class Asset extends Model
       'checklist_id'
     );
   }
+
+  public function checklistAssets()
+  {
+    return $this->hasMany(ChecklistAssets::class);
+  }
+
+  public function latestPmHistory()
+  {
+    return $this->hasOne(AssetPmHistory::class)->latestOfMany('done_date');
+  }
+
+  public function checklists()
+  {
+    return $this->belongsToMany(Checklist::class, 'checklist_assets');
+  }
 }

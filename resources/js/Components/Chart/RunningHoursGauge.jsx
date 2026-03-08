@@ -101,9 +101,9 @@ export default function RunningHoursGauge({
 			style={{
 				fontFamily: "'DM Mono', monospace",
 				// background: cfg.bg,
-				border: `1px solid ${cfg.color}22`,
+				// border: `1px solid ${cfg.color}22`,
 				// padding: "4px 8px",
-				transition: "border-color 0.4s ease",
+				// transition: "border-color 0.4s ease",
 			}}
 		>
 			<div
@@ -113,7 +113,7 @@ export default function RunningHoursGauge({
 					alignItems: "start",
 				}}
 			>
-				<div className="col-span-10">
+				<div className="col-span-9">
 					<div
 						className="flex justify-between"
 						style={{
@@ -245,7 +245,7 @@ export default function RunningHoursGauge({
 					</div>
 				</div>
 
-				<div className="col-span-2 flex flex-col items-end">
+				<div className="col-span-3 flex flex-col items-end">
 					<div
 						style={{
 							fontSize: "20px",

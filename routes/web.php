@@ -14,6 +14,9 @@ use App\Http\Controllers\ChecklistsController;
 use App\Http\Controllers\CheckItemsController;
 use App\Http\Controllers\SchedulesController;
 use App\Http\Controllers\AssetsController;
+use App\Http\Controllers\GlobalPmController;
+use App\Http\Controllers\GlobalPmSchedulesController;
+use App\Http\Controllers\PmHistoryController;
 use App\Http\Controllers\ChecklistAssetsController;
 use App\Http\Controllers\PerformChecklistController;
 use App\Http\Controllers\PerformSDSMonitoringController;
@@ -146,6 +149,17 @@ Route::prefix('schedules')->name('schedules.')->group(
     }
 );
 
+Route::prefix('pm')->name('pm.')->group(
+    function () {
+        Route::prefix('history')->name('history.')->group(function () {
+            Route::get('/', [PmHistoryController::class, 'index'])->name('index');
+        });
+        Route::prefix('schedule')->name('schedule.')->group(function () {
+            Route::get('/', [PmHistoryController::class, 'getAllSchedule'])->name('getAllSchedule');
+        });
+    }
+);
+
 Route::prefix('assets')->name('assets.')->group(
     function () {
         Route::middleware([])->group(function () {
@@ -158,6 +172,20 @@ Route::prefix('assets')->name('assets.')->group(
             Route::get("/{id}/edit", [AssetsController::class, 'upsert'])->name('edit');
         });
     }
+);
+
+Route::prefix('global-pm')->name('global-pm.')->group(
+    function () {
+        Route::middleware([])->group(function () {
+            Route::get("/", [GlobalPmController::class, 'index'])->name('index');
+        });
+
+        Route::prefix('schedules')->name('schedules.')->group(function () {
+            Route::get('/', [GlobalPmSchedulesController::class, 'index'])
+                ->name('index');
+        });
+    }
+
 );
 
 Route::prefix('checklist-assets')->name('checklist-assets.')->group(

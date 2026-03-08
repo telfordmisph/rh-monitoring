@@ -101,7 +101,6 @@ class CheckItemsController extends Controller
     return response()->json([
       'status' => 'ok',
       'message' => 'Updated successfully',
-      'updated' => $result['updated']
     ]);
   }
 

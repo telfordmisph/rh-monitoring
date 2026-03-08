@@ -27,7 +27,7 @@ const DropdownCell = ({ row, getValue, table, column, options = [] }) => {
 		<>
 			<button
 				type="button"
-				className="btn w-full"
+				className="btn bg-transparent w-full my-auto"
 				popoverTarget={popoverId}
 				style={{ anchorName: anchorId }}
 			>

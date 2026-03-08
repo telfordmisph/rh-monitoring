@@ -52,4 +52,11 @@ class ChecklistItem extends Model
       'schedule_id'   // FK on entity_schedules
     );
   }
+
+  protected static function booted()
+  {
+    static::deleting(function ($checklistItem) {
+      $checklistItem->entitySchedule()->delete();
+    });
+  }
 }

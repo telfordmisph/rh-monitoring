@@ -57,7 +57,7 @@ class HazardousWasteTurnOverLogSheetController extends Controller
         'required',
         'string',
         Rule::unique('hazardous_waste_material_turn_over_logsheet', 'reference_no')
-          ->ignore($id),
+          ->ignore(is_numeric($id) ? $id : null),
       ],
       'requestor' => [
         'required',
@@ -85,7 +85,6 @@ class HazardousWasteTurnOverLogSheetController extends Controller
     return response()->json([
       'status' => 'ok',
       'message' => 'Updated successfully',
-      'updated' => $result['updated']
     ]);
   }
 

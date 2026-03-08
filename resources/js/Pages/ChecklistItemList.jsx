@@ -50,6 +50,8 @@ const ChecklistItemList = () => {
 		auto: false,
 	});
 
+	console.log("🚀 ~ ChecklistItemList ~ checkItems:", checkItems);
+
 	const closeModals = () => {
 		document.getElementById(checkItemListModalID).close();
 		document.getElementById(scheduleModalID).close();
@@ -246,6 +248,7 @@ const ChecklistItemList = () => {
 				checklist_id: selectedChecklist?.id,
 			};
 		});
+		console.log("🚀 ~ saveChanges ~ payload:", payload);
 
 		try {
 			await mutate(route("api.checklist-items.bulkUpdate"), {

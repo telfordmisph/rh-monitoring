@@ -15,7 +15,6 @@
     }
   }
 
-
   --font-sans: "Poppins", sans-serif;
   
   /* default custom values */
@@ -137,3 +136,22 @@ html {
   display: inline-block;
   animation: pop 0.6s ease forwards, rainbow 1s linear infinite;
 }
+
+ /* Override multimonth year view backgrounds */
+  .fc-multimonth {
+      background-color: transparent !important;
+      border: none !important;
+  }
+
+  .fc-multimonth-header {
+      background-color: transparent !important;
+  }
+
+  .fc-multimonth-daygrid {
+      background-color: transparent !important;
+  }
+
+  .fc-multimonth-month {
+      background-color: transparent !important;
+      border: none !important;
+  }

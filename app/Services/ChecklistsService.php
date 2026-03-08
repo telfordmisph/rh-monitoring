@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Checklist;
 use App\Services\AssetsService;
 use App\Support\CacheKeys;
+use App\Repositories\CheckItemsResultRepository;
+use Illuminate\Support\Facades\Log;
 
 class ChecklistsService
 {
