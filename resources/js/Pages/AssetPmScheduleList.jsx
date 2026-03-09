@@ -105,7 +105,7 @@ const AssetPmScheduleList = () => {
 		() =>
 			createClickableCell({
 				modalID: scheduleModalID,
-				deletable: false,
+				deletable: true,
 				handleCellClick: handleEditedItemClick,
 				formatDisplayValue: ({ row }) =>
 					row.original.schedule?.schedule_name ?? "",
