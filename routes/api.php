@@ -33,46 +33,61 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/', [LocationController::class, 'index'])
         ->name('index');
       Route::patch('/bulk-update', [LocationController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
       Route::post('/add', [LocationController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('store');
       Route::delete('/bulk-delete', [LocationController::class, 'massGenocide'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('massGenocide');
     });
 
     Route::prefix('utility-trash')->name('utility-trash.')->group(function () {
       Route::post('/perform', [UtilityTrashController::class, 'perform'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('perform');
       Route::patch('/verify', [UtilityTrashController::class, 'bulkVerify'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('verify');
     });
 
     Route::prefix('hazardous-log-sheet')->name('hazardous-log-sheet.')->group(function () {
       Route::post('/add', [HazardousWasteTurnOverLogSheetController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::patch('/bulk-update', [HazardousWasteTurnOverLogSheetController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
       Route::delete('/{reference_no}/delete', [HazardousWasteTurnOverLogSheetController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{reference_no}/update', [HazardousWasteTurnOverLogSheetController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
     });
 
     Route::prefix('chemicals')->name('chemicals.')->group(function () {
       Route::post('/add', [ChemicalsController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [ChemicalsController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [ChemicalsController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
     });
 
     Route::prefix('chemicals-sds')->name('chemicals-sds.')->group(function () {
       Route::post('/add', [ChemicalSDSController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [ChemicalSDSController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [ChemicalSDSController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
     });
 
@@ -80,16 +95,21 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/', [ChecklistItemsController::class, 'index'])
         ->name('index');
       Route::post('/add', [ChecklistItemsController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [ChecklistItemsController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [ChecklistItemsController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
       Route::get('/all-check-items', [ChecklistItemsController::class, 'getAllCheckItems'])
         ->name('all-check-items');
       Route::patch('/bulk-update', [ChecklistItemsController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
       Route::delete('/bulk-delete', [ChecklistItemsController::class, 'massGenocide'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('massGenocide');
       Route::get('/scheduled-check-items', [ChecklistItemsController::class, 'getScheduledCheckItems'])
         ->name('scheduled-check-items');
@@ -99,12 +119,16 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/', [CheckItemsController::class, 'index'])
         ->name('index');
       Route::post('/add', [CheckItemsController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [CheckItemsController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [CheckItemsController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
       Route::patch('/bulk-update', [CheckItemsController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
     });
 
@@ -112,19 +136,26 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/', [AssetsController::class, 'index'])
         ->name('index');
       Route::post('/add', [AssetsController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [AssetsController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [AssetsController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
       Route::get('/all-assets', [AssetsController::class, 'getAllAssets'])
         ->name('all-assets');
       Route::patch('/bulk-update', [AssetsController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
       Route::delete('/bulk-delete', [AssetsController::class, 'massGenocide'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('massGenocide');
       Route::prefix('assets/{assetId}')->group(function () {
-        Route::post('record-done-date', [PmHistoryController::class, 'recordAssetPmDoneDate'])->name('recordDoneDate');
+        Route::post('record-done-date', [PmHistoryController::class, 'recordAssetPmDoneDate'])
+          ->middleware(ApiPermissionMiddleware::class)
+          ->name('recordDoneDate');
       });
     });
 
@@ -151,14 +182,19 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/due-with-items', [AssetsController::class, 'getDueAssetsWithItems'])
         ->name('due-assets-with-items');
       Route::post('/add', [ChecklistAssetsController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [ChecklistAssetsController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [ChecklistAssetsController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
       Route::patch('/bulk-update', [ChecklistAssetsController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
       Route::delete('/bulk-delete', [ChecklistAssetsController::class, 'massGenocide'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('massGenocide');
     });
 
@@ -178,10 +214,13 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/', [SchedulesController::class, 'index'])
         ->name('index');
       Route::post('/add', [SchedulesController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [SchedulesController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [SchedulesController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
     });
 
@@ -189,14 +228,19 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/', [AssetPmSchedulesController::class, 'index'])
         ->name('index');
       Route::post('/add', [AssetPmSchedulesController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [AssetPmSchedulesController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [AssetPmSchedulesController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
       Route::patch('/bulk-update', [AssetPmSchedulesController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
       Route::delete('/bulk-delete', [AssetPmSchedulesController::class, 'massGenocide'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('massGenocide');
     });
 
@@ -204,15 +248,19 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/', [ChecklistItemSchedulesController::class, 'index'])
         ->name('index');
       Route::post('/add', [ChecklistItemSchedulesController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [ChecklistItemSchedulesController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [ChecklistItemSchedulesController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
     });
 
     Route::prefix('global-pm')->name('global-pm.')->group(function () {
       Route::patch('/bulk-update', [GlobalPmController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
       Route::get('/', [GlobalPmController::class, 'index'])
         ->name('index');
@@ -221,17 +269,24 @@ Route::middleware([ApiAuthMiddleware::class])
         Route::get('/', [GlobalPmSchedulesController::class, 'index'])
           ->name('index');
         Route::post('/add', [GlobalPmSchedulesController::class, 'store'])
+          ->middleware(ApiPermissionMiddleware::class)
           ->name('add');
         Route::delete('/{id}/delete', [GlobalPmSchedulesController::class, 'destroy'])
+          ->middleware(ApiPermissionMiddleware::class)
           ->name('delete');
         Route::patch('/{id}/update', [GlobalPmSchedulesController::class, 'update'])
+          ->middleware(ApiPermissionMiddleware::class)
           ->name('update');
         Route::patch('/bulk-update', [GlobalPmSchedulesController::class, 'bulkUpdate'])
+          ->middleware(ApiPermissionMiddleware::class)
           ->name('bulkUpdate');
         Route::delete('/bulk-delete', [GlobalPmSchedulesController::class, 'massGenocide'])
+          ->middleware(ApiPermissionMiddleware::class)
           ->name('massGenocide');
         Route::prefix('globalPmId/{globalPmId}')->group(function () {
-          Route::post('record-done-date', [PmHistoryController::class, 'recordGlobalPmDoneDate'])->name('recordDoneDate');
+          Route::post('record-done-date', [PmHistoryController::class, 'recordGlobalPmDoneDate'])
+            ->middleware(ApiPermissionMiddleware::class)
+            ->name('recordDoneDate');
         });
       });
     });
@@ -240,12 +295,16 @@ Route::middleware([ApiAuthMiddleware::class])
       Route::get('/', [ChecklistsController::class, 'getAllChecklistsWithDueAssets'])
         ->name('index');
       Route::post('/add', [ChecklistsController::class, 'store'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('add');
       Route::delete('/{id}/delete', [ChecklistsController::class, 'destroy'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('delete');
       Route::patch('/{id}/update', [ChecklistsController::class, 'update'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('update');
       Route::patch('/bulk-update', [ChecklistsController::class, 'bulkUpdate'])
+        ->middleware(ApiPermissionMiddleware::class)
         ->name('bulkUpdate');
     });
   });
