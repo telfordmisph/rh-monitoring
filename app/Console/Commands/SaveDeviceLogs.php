@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\Device;
 use App\Models\Status;
 use Illuminate\Console\Command;
-use App\Constants\DeviceTempThresholdConstants;
 
 class SaveDeviceLogs extends Command
 {
@@ -14,7 +13,7 @@ class SaveDeviceLogs extends Command
 
     public function handle(): void
     {
-        $devices = Device::all();
+        $devices = Device::with('thresholdProfile')->all();
 
         if ($devices->isEmpty()) {
             $this->info('No devices found.');
@@ -49,7 +48,9 @@ class SaveDeviceLogs extends Command
                     continue;
                 }
 
-                if ($this->isOutOfRange((float) $temp, (float) $rh, $device->location)) {
+                $isOutOfRange = $device->isRhBreached((float) $rh) || $device->isTempBreached((float) $temp);
+
+                if ($isOutOfRange) {
                     $device->statuses()->create([
                         'temp'         => $temp,
                         'rh'           => $rh,
@@ -74,17 +75,5 @@ class SaveDeviceLogs extends Command
         $pos = strpos($content, $keyword);
         if ($pos === false) return '';
         return substr($content, $pos + $offset, $length);
-    }
-
-    private function isOutOfRange(float $temp, float $rh, string $location): bool
-    {
-        $limits = in_array($location, DeviceTempThresholdConstants::PL3_LOCATIONS, true)
-            ? DeviceTempThresholdConstants::PL3
-            : DeviceTempThresholdConstants::STANDARD;
-
-        return $temp > $limits['temp_max']
-            || $temp < $limits['temp_min']
-            || $rh   > $limits['rh_max']
-            || $rh   < $limits['rh_min'];
     }
 }

@@ -14,7 +14,11 @@ import { GiChemicalDrop } from "react-icons/gi";
 import { GrRestroom } from "react-icons/gr";
 import { IoSettingsOutline } from "react-icons/io5";
 import { LuLayoutDashboard } from "react-icons/lu";
-import { MdChecklist, MdHealthAndSafety } from "react-icons/md";
+import {
+	MdChecklist,
+	MdDataThresholding,
+	MdHealthAndSafety,
+} from "react-icons/md";
 import { TiLocationArrowOutline } from "react-icons/ti";
 import { IoIosSettings } from "react-icons/io";
 
@@ -36,6 +40,13 @@ export default function NavLinks({ isCollapse }) {
 				href={route("devices.index")}
 				label="Devices"
 				icon={<TiLocationArrowOutline className="w-full h-full" />}
+				isIconOnly={isCollapse}
+			/>
+
+			<SidebarLink
+				href={route("threshold-profiles.index")}
+				label="Threshold Profiles"
+				icon={<MdDataThresholding className="w-full h-full" />}
 				isIconOnly={isCollapse}
 			/>
 

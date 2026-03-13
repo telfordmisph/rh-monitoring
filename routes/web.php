@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Middleware\RoutePermissionMiddleware;
 use App\Http\Controllers\General\ProfileController;
+use App\Http\Controllers\ThresholdProfileController;
 use Inertia\Inertia;
 
 Route::get('/', function () {
@@ -22,10 +23,24 @@ Route::post('/status',         [StatusController::class, 'fetchStatus'])->name('
 Route::post('/status/save-logs', [StatusController::class, 'saveLogs'])->name('status.saveLogs');
 Route::post('/dashboard/log',    [StatusController::class, 'log'])->name('dashboard.log');
 
+Route::prefix('threshold-profiles')->group(
+    function () {
+        Route::get('/', [ThresholdProfileController::class, 'index'])->name('threshold-profiles.index');
+
+        Route::middleware(RoutePermissionMiddleware::class)->group(
+            function () {
+                Route::put('/{profile}', [ThresholdProfileController::class, 'update']);
+                Route::post('/', [ThresholdProfileController::class, 'store']);
+            }
+        );
+    }
+);
+
 Route::prefix('devices')->group(function () {
     Route::get('/',       [DeviceController::class, 'index'])->name('devices.index');
 
     Route::middleware(RoutePermissionMiddleware::class)->group(function () {
+        Route::put('/{device}/threshold-profile', [ThresholdProfileController::class, 'assignToDevice']);
         Route::get('/setup',  [DeviceController::class, 'setup'])->name('devices.setup');
         Route::post('/',           [DeviceController::class, 'store'])->name('devices.store');
         Route::put('/{device}',    [DeviceController::class, 'update'])->name('devices.update');

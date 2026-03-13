@@ -14,8 +14,7 @@ class StatusController extends Controller
     public function index()
     {
         return Inertia::render('Dashboard', [
-            'devices'    => Device::orderBy('location')->get(),
-            'thresholds' => $this->thresholdConfig(),
+            'devices' => Device::with('thresholdProfile')->orderBy('location')->get(),
         ]);
     }
 
@@ -31,12 +30,8 @@ class StatusController extends Controller
             'is_recording' => 'required|string',
         ]);
 
-        $device     = Device::find($request->device_id);
-        $outOfRange = $this->isOutOfRange(
-            (float) $request->temp,
-            (float) $request->rh,
-            $device->location
-        );
+        $device = Device::with('thresholdProfile')->find($request->device_id);
+        $outOfRange = $device->isTempBreached($request->temp) || $device->isRhBreached($request->rh);
 
         if ($outOfRange) {
             $device->statuses()->create([
@@ -50,28 +45,5 @@ class StatusController extends Controller
             'out_of_range' => $outOfRange,
             'saved'        => $outOfRange,
         ]);
-    }
-
-    // -----------------------------------------------------------------------
-
-    private function isOutOfRange(float $temp, float $rh, string $location): bool
-    {
-        $limits = in_array($location, DeviceTempThresholdConstants::PL3_LOCATIONS, true)
-            ? DeviceTempThresholdConstants::PL3
-            : DeviceTempThresholdConstants::STANDARD;
-
-        return $temp > $limits['temp_max']
-            || $temp < $limits['temp_min']
-            || $rh   > $limits['rh_max']
-            || $rh   < $limits['rh_min'];
-    }
-
-    private function thresholdConfig(): array
-    {
-        return [
-            'standard'      => DeviceTempThresholdConstants::STANDARD,
-            'pl3'           => DeviceTempThresholdConstants::PL3,
-            'pl3_locations' => DeviceTempThresholdConstants::PL3_LOCATIONS,
-        ];
     }
 }
